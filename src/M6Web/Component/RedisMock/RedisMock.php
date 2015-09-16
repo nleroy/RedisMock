@@ -738,27 +738,29 @@ class RedisMock
     }
 
 
-    public function zadd($key, $score, $member) {
-        if (func_num_args() > 3) {
-            throw new UnsupportedException('In RedisMock, `zadd` command can not set more than one member at once.');
-        }
+    public function zadd($key, $membersAndScores)
+    {
+      if (!is_array($membersAndScores)) {
+        throw new InvalidArgumentException('The scoresAndMembers variable needs to be an array');
+      }
 
-        $this->deleteOnTtlExpired($key);
+      $this->deleteOnTtlExpired($key);
 
+      foreach ($membersAndScores as $member => $score) {
         if (isset(self::$data[$key]) && !is_array(self::$data[$key])) {
-            return $this->returnPipedInfo(null);
+          return $this->returnPipedInfo(null);
         }
 
         $isNew = !isset(self::$data[$key][$member]);
 
         self::$data[$key][$member] = (int) $score;
         self::$dataTypes[$key]     = 'zset';
-        if (array_key_exists($key, self::$dataTtl))
-        {
-            unset(self::$dataTtl[$key]);
+        if (array_key_exists($key, self::$dataTtl)) {
+          unset(self::$dataTtl[$key]);
         }
+      }
 
-        return $this->returnPipedInfo((int) $isNew);
+      return $this->returnPipedInfo((int) $isNew);
     }
 
     public function zremrangebyscore($key, $min, $max) {
